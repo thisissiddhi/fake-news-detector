@@ -84,7 +84,7 @@ EXAMPLES = [
     ["BREAKING: Government puts secret mind-control chemicals in tap water — doctors REFUSE to talk about it. Share before they delete this!", "TF-IDF + Logistic Regression"],
 ]
 
-with gr.Blocks(theme=gr.themes.Soft(), title="Fake News Detector") as demo:
+with gr.Blocks(title="Fake News Detector") as demo:
     gr.Markdown(DESCRIPTION)
 
     with gr.Row():
@@ -115,4 +115,4 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Fake News Detector") as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch(share=False)
+    demo.launch(share=False, theme=gr.themes.Soft())
