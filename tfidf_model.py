@@ -12,15 +12,18 @@ import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+from sklearn.metrics import classification_report, accuracy_score
 
 from preprocess import load_isot_dataset, preprocess_for_tfidf, split_data
 
-MODEL_PATH = "models/tfidf_pipeline.pkl"
+# Look for model in same directory as this script, or models/ subfolder
+_dir = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(_dir, "tfidf_pipeline.pkl")
+if not os.path.exists(MODEL_PATH):
+    MODEL_PATH = os.path.join(_dir, "models", "tfidf_pipeline.pkl")
 
 
 def build_pipeline() -> Pipeline:
-    """Create TF-IDF + Logistic Regression pipeline."""
     return Pipeline([
         ("tfidf", TfidfVectorizer(
             max_features=100_000,
@@ -32,16 +35,13 @@ def build_pipeline() -> Pipeline:
             max_iter=1000,
             C=5.0,
             solver="lbfgs",
-            n_jobs=-1,
         )),
     ])
 
 
 def train(true_path: str, fake_path: str) -> Pipeline:
-    """Full train pipeline: load → preprocess → train → evaluate → save."""
     df = load_isot_dataset(true_path, fake_path)
     df = preprocess_for_tfidf(df)
-
     X_train, X_test, y_train, y_test = split_data(df, text_col="clean_text")
 
     print(f"Train size: {len(X_train):,}  |  Test size: {len(X_test):,}")
@@ -55,7 +55,7 @@ def train(true_path: str, fake_path: str) -> Pipeline:
     print(f"\nAccuracy: {acc:.4f}")
     print(classification_report(y_test, y_pred, target_names=["Fake", "Real"]))
 
-    os.makedirs("models", exist_ok=True)
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(pipeline, f)
     print(f"Model saved to {MODEL_PATH}")
@@ -64,16 +64,11 @@ def train(true_path: str, fake_path: str) -> Pipeline:
 
 
 def load_model() -> Pipeline:
-    """Load a saved TF-IDF pipeline."""
     with open(MODEL_PATH, "rb") as f:
         return pickle.load(f)
 
 
 def predict(text: str, pipeline: Pipeline = None) -> dict:
-    """
-    Predict whether a news article is real or fake.
-    Returns label and confidence score.
-    """
     from preprocess import clean_text
 
     if pipeline is None:
